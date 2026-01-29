@@ -8,9 +8,9 @@ LLM-PeerReview is an unsupervised framework designed to select the most ideal re
 
 This project includes:
 
-* **LLM-PeerReview Variants**: `Average` and `Weighted` (incorporating truth inference).
-* **Baselines**: Reproductions of several ensemble methods including Random, GaC, Agent-Forest, and Smoothie.
-* **Benchmarks**: Support for evaluation on GSM8K, MATH, TriviaQA, and AlpacaEval.
+- **LLM-PeerReview Variants**: `Average` and `Weighted` (incorporating truth inference).
+- **Baselines**: Reproductions of several ensemble methods including Random, GaC, Agent-Forest, and Smoothie.
+- **Benchmarks**: Support for evaluation on GSM8K, MATH, TriviaQA, and AlpacaEval.
 
 ---
 
@@ -50,55 +50,102 @@ The workflow consists of four main steps:
 
 ### 2.1 Response Generation
 
-Generate candidate responses from individual models (e.g., Llama-3.1-8B, Mistral-7B, Qwen series):
+Generate responses from various LLMs on benchmark datasets:
+
+* **Standard 7B Models**: Generate responses using four different 7B models (Llama-3.1-8B, Mistral-7B, Qwen2-7B, Qwen2.5-7B) on the target datasets.
 
 ```bash
 bash ./Script/Response_Generate/New_7B_Response_Generate.sh
 ```
 
-### 2.2 Response Scoring
+**Output**: Generated responses are saved in the LLM_Response/ directory with organized subfolders for each model and dataset.
 
-Apply the PeerReview scoring mechanism where models act as reviewers to evaluate each other:
+### 2.2 Response Scoring (PeerReview Method)
+
+Score the generated responses using our PeerReview methodology. We provide scoring scripts for different datasets:
+
+* **GSM8K Dataset**:
 
 ```bash
-# Example for GSM8K
 bash ./Script/Response_Scoring/judge/judge_gsm8k400.sh
 ```
 
-### 2.3 Ensemble Generation
+**Note**: The scoring process leverages the LLM-as-a-Judge paradigm, where each available LLM acts as a reviewer to evaluate and assign scores to all candidate responses, forming the foundation for subsequent ensemble selection.
 
-Run the ensemble strategies to select the final output.
+### 2.3 Ensemble Methods
 
-* **Baselines (Random, GaC, Agent Forest, Smoothie)**:
+Combine multiple model responses using different ensemble strategies. We compare our proposed method against several established baselines:
+
+1. **Random**: A random-selection baseline that returns a response from a randomly chosen LLM in the ensemble.
+
 ```bash
 bash ./Script/Ensemble_Generate/Random_Generate.sh
-bash ./Script/Ensemble_Generate/Smoothie-Global_Generate.sh
 ```
 
+2. **GaC**: A recent token-level ensemble-during-inference method.
 
-* **PeerReview (Ours)**:
 ```bash
-# Standard Average
+bash ./Script/Response_Generate/GaC_7B_Response_Generate.sh
+```
+
+3. **Agent Forest**: A recently proposed similarity-based ensemble method.
+
+```bash
+bash ./Script/Ensemble_Generate/Agent_forest_Generate.sh
+```
+
+4. **Smoothie-Global & Smoothie-Local**: Strong similarity-based ensemble methods that operate at the global level and the local level, respectively.
+
+```bash
+# Global variant
+bash ./Script/Ensemble_Generate/Smoothie-Global_Generate.sh
+
+# Local variant
+bash ./Script/Ensemble_Generate/Smoothie-Local_Generate.sh
+```
+
+5. **PeerReview Average (Ours)**: Our primary ensemble method which averages scores from multiple LLM judges.
+
+```bash
 bash ./Script/Ensemble_Generate/PeerReview_Average_Generate.sh
-# Enhanced with Truth Inference
+```
+
+6. **PeerReview Average with Truth Inference (Ours)**: An enhanced variant that employs a graphical-model-based truth inference algorithm for reliability-aware score aggregation.
+
+```bash
 bash ./Script/Ensemble_Generate/PeerReview_Average_Ti_Generate.sh
 ```
 
 ### 2.4 Evaluation
 
-Evaluate the performance of individual models and ensemble methods:
+Evaluate the quality of the generated responses and the performance of different ensemble methods:
+
+1. **Single LLM Evaluation**: Evaluate responses from the standard 7B models.
 
 ```bash
-# Evaluate PeerReview outputs
-bash ./Script/Response_Evaluation/PeerReview_Average_Ensemble_Response_Evaluate.sh
+bash ./Script/Response_Evaluation/New_7B_Response_Evaluate.sh
 ```
 
----
+2. **GaC Baseline Evaluation**: Evaluate responses from the GaC baseline model.
 
-## 3. Method Description
+```bash
+bash ./Script/Response_Evaluation/GaC_7B_Response_Evaluate.sh
+```
 
-The LLM-PeerReview framework operates in three distinct phases:
+3. **Scored Response Evaluation**: Evaluate the outcomes after applying the PeerReview scoring process.
 
-1. **Scoring**: Each model in the ensemble generates a response and subsequently acts as a judge to score responses from other models.
-2. **Reasoning**: A truth inference algorithm aggregates these scores, accounting for potential biases and the varying reliability of different judges.
-3. **Selecting**: The response with the highest aggregated score is selected as the final output for the given query.
+```bash
+bash ./Script/Response_Evaluation/New_7B_Judge_Response_Evaluate.sh
+```
+
+4. **Baseline Ensemble Evaluation**: Evaluate the results produced by baseline ensemble methods (Random, Agent Forest, Smoothie).
+
+```bash
+bash ./Script/Response_Evaluation/Baseline_Ensemble_Response_Evaluate.sh
+```
+
+5. **PeerReview Ensemble Evaluation**: Evaluate the final outputs of our proposed PeerReview ensemble methods.
+
+```bash
+bash ./Script/Response_Evaluation/PeerReview_Average_Ensemble_Response_Evaluate.sh
+```
